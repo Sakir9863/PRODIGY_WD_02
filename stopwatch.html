@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Advanced Stopwatch</title>
+
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+    color: white;
+}
+
+.app {
+    width: 360px;
+    padding: 25px;
+    border-radius: 16px;
+    text-align: center;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+}
+
+h2 {
+    margin-bottom: 15px;
+    font-weight: 500;
+}
+
+.time {
+    font-size: 36px;
+    margin: 20px 0;
+    letter-spacing: 2px;
+}
+
+.controls button {
+    padding: 10px 14px;
+    margin: 5px;
+    border-radius: 6px;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.start { background: #28a745; color: white; }
+.stop  { background: #ffc107; color: black; }
+.reset { background: #dc3545; color: white; }
+.lap   { background: #17a2b8; color: white; }
+
+.lap-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 15px;
+    max-height: 150px;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.lap-list li {
+    padding: 6px;
+    margin: 4px 0;
+    background: rgba(255,255,255,0.12);
+    border-radius: 5px;
+    font-size: 13px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+    <h2>⏳ Stopwatch</h2>
+    <div class="time" id="timeDisplay">00:00:00.000</div>
+
+    <div class="controls">
+        <button id="startBtn" class="start">Start</button>
+        <button id="stopBtn" class="stop" disabled>Pause</button>
+        <button id="resetBtn" class="reset" disabled>Reset</button>
+        <button id="lapBtn" class="lap" disabled>Lap</button>
+    </div>
+
+    <ul class="lap-list" id="lapList"></ul>
+</div>
+
+<script>
+let startTimestamp = 0;
+let storedTime = 0;
+let frameId = null;
+let running = false;
+
+const display = document.getElementById("timeDisplay");
+const startBtn = document.getElementById("startBtn");
+const stopBtn  = document.getElementById("stopBtn");
+const resetBtn = document.getElementById("resetBtn");
+const lapBtn   = document.getElementById("lapBtn");
+const lapList  = document.getElementById("lapList");
+
+function format(ms) {
+    let hrs = Math.floor(ms / 3600000);
+    let mins = Math.floor((ms % 3600000) / 60000);
+    let secs = Math.floor((ms % 60000) / 1000);
+    let millis = Math.floor(ms % 1000);
+    return `${String(hrs).padStart(2,'0')}:${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}.${String(millis).padStart(3,'0')}`;
+}
+
+function update(now) {
+    if (!running) return;
+    storedTime = now - startTimestamp;
+    display.textContent = format(storedTime);
+    frameId = requestAnimationFrame(update);
+}
+
+function startWatch() {
+    if (running) return;
+    running = true;
+    startTimestamp = performance.now() - storedTime;
+    frameId = requestAnimationFrame(update);
+
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    resetBtn.disabled = false;
+    lapBtn.disabled = false;
+}
+
+function pauseWatch() {
+    running = false;
+    cancelAnimationFrame(frameId);
+    storedTime = performance.now() - startTimestamp;
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+}
+
+function resetWatch() {
+    running = false;
+    cancelAnimationFrame(frameId);
+    storedTime = 0;
+    display.textContent = "00:00:00.000";
+    lapList.innerHTML = "";
+
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    resetBtn.disabled = true;
+    lapBtn.disabled = true;
+}
+
+function addLap() {
+    if (storedTime === 0) return;  // avoid blank lap
+    const li = document.createElement("li");
+    li.textContent = `Lap ${lapList.children.length + 1} → ${format(storedTime)}`;
+    lapList.appendChild(li);
+}
+startBtn.addEventListener("click", startWatch);
+stopBtn.addEventListener("click", pauseWatch);
+resetBtn.addEventListener("click", resetWatch);
+lapBtn.addEventListener("click", addLap);
+</script>
+
+</body>
+</html>
